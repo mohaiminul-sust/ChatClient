@@ -35,7 +35,7 @@ public class client_form extends javax.swing.JFrame {
 
     String username, address = "localhost", fname, sender, fpath;
     ArrayList<String> users = new ArrayList();
-    int port = 2610, fport = 13267;
+    int port = 2610, fport;
     Boolean isConnected = false;
     Socket socket, filesock;
     BufferedReader reader;
@@ -146,26 +146,34 @@ public class client_form extends javax.swing.JFrame {
                     } else if (messageParts[2].equals("File")) {
                         
                         fport = Integer.parseInt(messageParts[1]);
+                        sender = messageParts[0];
                         clientStatus.append("received port for file transfer : "+fport+"\n");
                         JFileChooser chooser = new JFileChooser();
+                        
+                        chooser.setApproveButtonText("SEND");
+                        chooser.setControlButtonsAreShown(true);
+                        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                        
                         int retval = chooser.showOpenDialog(client_form.this.getParent());
 
                         if (retval == JFileChooser.APPROVE_OPTION) {
                             fname = chooser.getSelectedFile().getName();
                             fpath = chooser.getSelectedFile().getPath();
-
-                            writer.println(username + ":" + fname + ":Fname:" + userList.getSelectedValue());
-                            clientStatus.append("sending file name : " + fname + "\n");
+                            clientStatus.append("Selected file : "+fpath+"\n");
+                            writer.println(username + ":" + fname + ":Fname:" + sender);
+                            clientStatus.append("Sending file name : " + fname + "\n");
                             writer.flush();
                         }
                     } else if (messageParts[2].equals("Fname")) {
                         fname = messageParts[1];
                         sender = messageParts[0];
                         clientStatus.append("Got Filename : " + fname + "\n");
-                        String message = username + ":" + sender + ":Go";
-                        writer.println(message);
+                        clientStatus.append("Got Sender : " + sender + "\n");
+                        
+                        //String message = username +":"+sender+":Go";
+                        writer.println(username + ":" + sender + ":Got");
                         writer.flush();
-                    } else if (messageParts[2].equals("Go")) {
+                    } else if (messageParts[2].equals("Got")) {
                         System.out.println("Doing");
                         Thread sendThread = new Thread(new Sender());
                         sendThread.start();
@@ -229,13 +237,16 @@ public class client_form extends javax.swing.JFrame {
     }
 
     public class Receiver implements Runnable {
-
         @Override
         public void run() {
+            
+          fport = 13267;
+
             try {
 
                 fileservsock = new ServerSocket(fport);
                 clientStatus.append("Waiting...\n");
+//                filesock.setSoTimeout(port);
                 writer.println(username + ":" + fport + ":" + sender + ":Confd");
                 clientStatus.append("Sending port : " + fport + "\n");
                 writer.flush();
@@ -589,7 +600,7 @@ public class client_form extends javax.swing.JFrame {
             chatTextField.setText("");
             chatTextField.requestFocus();
 
-        } else if (userList.getSelectedValue() != null || !userList.getSelectedValue().equals("ALL USER")) {
+        } else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL USER")) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
