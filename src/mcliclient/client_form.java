@@ -101,7 +101,7 @@ public class client_form extends javax.swing.JFrame {
 
     public client_form() {
         listModel = new DefaultListModel();
-        listModel.addElement("ALL USER");
+        listModel.addElement("ALL");
         String[] tempList = new String[users.size()];
         users.toArray(tempList);
 
@@ -144,22 +144,22 @@ public class client_form extends javax.swing.JFrame {
 
                         }
                     } else if (messageParts[2].equals("File")) {
-                        
+
                         fport = Integer.parseInt(messageParts[1]);
                         sender = messageParts[0];
-                        clientStatus.append("received port for file transfer : "+fport+"\n");
+                        clientStatus.append("received port for file transfer : " + fport + "\n");
                         JFileChooser chooser = new JFileChooser();
-                        
+
                         chooser.setApproveButtonText("SEND");
                         chooser.setControlButtonsAreShown(true);
                         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-                        
+
                         int retval = chooser.showOpenDialog(client_form.this.getParent());
 
                         if (retval == JFileChooser.APPROVE_OPTION) {
                             fname = chooser.getSelectedFile().getName();
                             fpath = chooser.getSelectedFile().getPath();
-                            clientStatus.append("Selected file : "+fpath+"\n");
+                            clientStatus.append("Selected file : " + fpath + "\n");
                             writer.println(username + ":" + fname + ":Fname:" + sender);
                             clientStatus.append("Sending file name : " + fname + "\n");
                             writer.flush();
@@ -169,7 +169,7 @@ public class client_form extends javax.swing.JFrame {
                         sender = messageParts[0];
                         clientStatus.append("Got Filename : " + fname + "\n");
                         clientStatus.append("Got Sender : " + sender + "\n");
-                        
+
                         //String message = username +":"+sender+":Go";
                         writer.println(username + ":" + sender + ":Got");
                         writer.flush();
@@ -226,7 +226,8 @@ public class client_form extends javax.swing.JFrame {
 
             try {
                 filesock.close();
-                clientStatus.append("Sending Done!!");
+                clientStatus.append("Sending Done!!\n");
+                clientStatus.append("Transfer time " + (end - start) + " ms\n");
             } catch (IOException ex) {
 
                 clientStatus.append("Socket can't be closed!");
@@ -235,12 +236,26 @@ public class client_form extends javax.swing.JFrame {
         }
 
     }
+    
+    private void sendFile(OutputStream os) throws Exception {
+
+        File myFile = new File(fpath);
+        byte[] mybytearray = new byte[(int) myFile.length() + 1];
+        FileInputStream fis = new FileInputStream(myFile);
+        BufferedInputStream bis = new BufferedInputStream(fis);
+        bis.read(mybytearray, 0, mybytearray.length);
+        clientStatus.append("Sending...\n");
+        os.write(mybytearray, 0, mybytearray.length);
+        os.flush();
+
+    }
 
     public class Receiver implements Runnable {
+
         @Override
         public void run() {
-            
-          fport = 13267;
+
+            fport = 13267;
 
             try {
 
@@ -329,10 +344,7 @@ public class client_form extends javax.swing.JFrame {
 
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
         usernameTextField = new javax.swing.JTextField();
-        passwordTextField = new javax.swing.JTextField();
         portTextField = new javax.swing.JTextField();
         addressTextField = new javax.swing.JTextField();
         connectButton = new javax.swing.JButton();
@@ -345,6 +357,7 @@ public class client_form extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         userList = new javax.swing.JList();
         fileButton = new javax.swing.JButton();
+        jLabel5 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -354,15 +367,7 @@ public class client_form extends javax.swing.JFrame {
         jLabel2.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
         jLabel2.setText("Port : ");
 
-        jLabel3.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
-        jLabel3.setText("Username : ");
-
-        jLabel4.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
-        jLabel4.setText("Password : ");
-
         usernameTextField.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
-
-        passwordTextField.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
 
         portTextField.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
         portTextField.setText("2610");
@@ -402,9 +407,11 @@ public class client_form extends javax.swing.JFrame {
         clientStatus.setColumns(20);
         clientStatus.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
         clientStatus.setRows(5);
+        clientStatus.setToolTipText("Status box");
         jScrollPane1.setViewportView(clientStatus);
 
         chatTextField.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
+        chatTextField.setToolTipText("chat box");
         chatTextField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 chatTextFieldActionPerformed(evt);
@@ -432,6 +439,9 @@ public class client_form extends javax.swing.JFrame {
             }
         });
 
+        jLabel5.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
+        jLabel5.setText("Username : ");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -442,22 +452,18 @@ public class client_form extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel4)
-                                .addGap(18, 18, 18)
-                                .addComponent(passwordTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel1)
+                                .addGap(29, 29, 29)
+                                .addComponent(addressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel2)
-                                    .addComponent(jLabel1)))
+                                .addComponent(jLabel2)
+                                .addGap(1, 1, 1)
+                                .addComponent(portTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel3)
+                                .addComponent(jLabel5)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(usernameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(3, 3, 3)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(portTextField, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 177, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(addressTextField, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 177, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
+                                .addComponent(usernameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 259, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(anonloginButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(connectButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
@@ -466,7 +472,7 @@ public class client_form extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addComponent(disconnectButton, javax.swing.GroupLayout.DEFAULT_SIZE, 133, Short.MAX_VALUE)
+                    .addComponent(disconnectButton, javax.swing.GroupLayout.DEFAULT_SIZE, 114, Short.MAX_VALUE)
                     .addComponent(fileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
@@ -478,25 +484,23 @@ public class client_form extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel3)
+                            .addComponent(jLabel5)
                             .addComponent(usernameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(6, 6, 6)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(passwordTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel2)))
+                            .addComponent(jLabel2)
+                            .addComponent(jLabel1)
+                            .addComponent(addressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(portTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(addressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(connectButton)
                             .addComponent(disconnectButton))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(anonloginButton)
-                            .addComponent(portTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fileButton)))
-                    .addComponent(jLabel1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(fileButton))))
+                .addGap(6, 6, 6)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 268, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -506,7 +510,7 @@ public class client_form extends javax.swing.JFrame {
                         .addComponent(jScrollPane2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(sendButton)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(14, Short.MAX_VALUE))
         );
 
         pack();
@@ -581,8 +585,7 @@ public class client_form extends javax.swing.JFrame {
     }//GEN-LAST:event_anonloginButtonActionPerformed
 
     private void sendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sendButtonActionPerformed
-
-        if (userList.getSelectedValue() == null || userList.getSelectedValue().equals("ALL USER")) {
+       if (userList.getSelectedValue() == null) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
@@ -598,7 +601,22 @@ public class client_form extends javax.swing.JFrame {
             chatTextField.setText("");
             chatTextField.requestFocus();
 
-        } else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL USER")) {
+        } else if(userList.getSelectedValue() != null && userList.getSelectedValue().equals("ALL")){
+            if (chatTextField.getText().equals("")) {
+                chatTextField.setText("");
+                chatTextField.requestFocus();
+            } else {
+                try {
+                    writer.println(username + ":" + chatTextField.getText() + ":Chat");
+                    writer.flush();
+                } catch (Exception e) {
+                    clientStatus.append("Message not send!");
+                }
+            }
+            chatTextField.setText("");
+            chatTextField.requestFocus();
+        
+        }else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL")) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
@@ -616,6 +634,7 @@ public class client_form extends javax.swing.JFrame {
             chatTextField.setText("");
             chatTextField.requestFocus();
         }
+
 
     }//GEN-LAST:event_sendButtonActionPerformed
 
@@ -637,7 +656,22 @@ public class client_form extends javax.swing.JFrame {
             chatTextField.setText("");
             chatTextField.requestFocus();
 
-        } else if (userList.getSelectedValue() != null) {
+        } else if(userList.getSelectedValue() != null && userList.getSelectedValue().equals("ALL")){
+            if (chatTextField.getText().equals("")) {
+                chatTextField.setText("");
+                chatTextField.requestFocus();
+            } else {
+                try {
+                    writer.println(username + ":" + chatTextField.getText() + ":Chat");
+                    writer.flush();
+                } catch (Exception e) {
+                    clientStatus.append("Message not send!");
+                }
+            }
+            chatTextField.setText("");
+            chatTextField.requestFocus();
+        
+        }else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL")) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
@@ -680,27 +714,8 @@ public class client_form extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_portTextFieldActionPerformed
 
-    private void sendfName(String fname) {
-        try {
-            writer.println(username + ":" + fname + ":File");
-            writer.flush();
-        } catch (Exception e) {
-            clientStatus.append("File name not send!");
-        }
-    }
 
-    private void sendFile(OutputStream os) throws Exception {
-
-        File myFile = new File(fpath);
-        byte[] mybytearray = new byte[(int) myFile.length() + 1];
-        FileInputStream fis = new FileInputStream(myFile);
-        BufferedInputStream bis = new BufferedInputStream(fis);
-        bis.read(mybytearray, 0, mybytearray.length);
-        clientStatus.append("Sending...\n");
-        os.write(mybytearray, 0, mybytearray.length);
-        os.flush();
-
-    }
+    
 
     /**
      * @param args the command line arguments
@@ -742,11 +757,9 @@ public class client_form extends javax.swing.JFrame {
     private javax.swing.JButton fileButton;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextField passwordTextField;
     private javax.swing.JTextField portTextField;
     private javax.swing.JButton sendButton;
     private javax.swing.JList userList;
