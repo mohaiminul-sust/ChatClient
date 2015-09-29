@@ -45,7 +45,7 @@ public class client_form extends javax.swing.JFrame {
     ServerSocket fileservsock;
     InputStream is;
     OutputStream fos;
-    boolean recflag = true, fnamehas = false;
+    boolean recflag = true, fnamehas = false, voice_or_file = false;
 
     public void listenThread() {
         Thread clientReader = new Thread(new ClientReader());
@@ -143,6 +143,19 @@ public class client_form extends javax.swing.JFrame {
                             System.out.println("Done");
 
                         }
+
+                    } else if (messageParts[2].equals("Voice")) {
+                        int retval = JOptionPane.showConfirmDialog(null, "Do you want to receive voice sms from " + messageParts[0] + "?");
+                        sender = messageParts[0];
+                        voice_or_file = true;
+                        if (retval == JOptionPane.YES_OPTION) {
+                            System.out.println("Doing");
+                            Thread receiveThread = new Thread(new Receiver());
+                            receiveThread.start();
+                            System.out.println("Done");
+                            Play_sound sound = new Play_sound();
+                            sound.play();
+                        }
                     } else if (messageParts[2].equals("File")) {
 
                         fport = Integer.parseInt(messageParts[1]);
@@ -164,6 +177,25 @@ public class client_form extends javax.swing.JFrame {
                             clientStatus.append("Sending file name : " + fname + "\n");
                             writer.flush();
                         }
+                    } else if (messageParts[2].equals("con-Voice")) {
+
+                        fport = Integer.parseInt(messageParts[1]);
+                        sender = messageParts[0];
+                        clientStatus.append("received port for voice transfer : " + fport + "\n");
+                        //JFileChooser chooser = new JFileChooser();
+
+                       // chooser.setApproveButtonText("SEND");
+                        // chooser.setControlButtonsAreShown(true);
+                        // chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                       // int retval = chooser.showOpenDialog(client_form.this.getParent());
+                        // if (retval == JFileChooser.APPROVE_OPTION) {
+                        fname = "RecordAudio.wav";
+                        fpath = "RecordAudio.wav";
+                        //clientStatus.append("Selected file : " + fpath + "\n");
+                        writer.println(username + ":" + fname + ":Voice-sms:" + sender);
+                        clientStatus.append("Sending voice sms : \n");
+                        writer.flush();
+                        //}
                     } else if (messageParts[2].equals("Fname")) {
                         fname = messageParts[1];
                         sender = messageParts[0];
@@ -173,7 +205,21 @@ public class client_form extends javax.swing.JFrame {
                         //String message = username +":"+sender+":Go";
                         writer.println(username + ":" + sender + ":Got");
                         writer.flush();
+                    } else if (messageParts[2].equals("Voice-sms")) {
+                        fname = messageParts[1];
+                        sender = messageParts[0];
+                        // clientStatus.append("Got Filename : " + fname + "\n");
+                        clientStatus.append("Got Sender : " + sender + "\n");
+
+                        //String message = username +":"+sender+":Go";
+                        writer.println(username + ":" + sender + ":Got-Voice");
+                        writer.flush();
                     } else if (messageParts[2].equals("Got")) {
+                        System.out.println("Doing");
+                        Thread sendThread = new Thread(new Sender());
+                        sendThread.start();
+                        System.out.println("Done");
+                    } else if (messageParts[2].equals("Got-Voice")) {
                         System.out.println("Doing");
                         Thread sendThread = new Thread(new Sender());
                         sendThread.start();
@@ -236,7 +282,7 @@ public class client_form extends javax.swing.JFrame {
         }
 
     }
-    
+
     private void sendFile(OutputStream os) throws Exception {
 
         File myFile = new File(fpath);
@@ -262,7 +308,13 @@ public class client_form extends javax.swing.JFrame {
                 fileservsock = new ServerSocket(fport);
                 clientStatus.append("Waiting...\n");
 //                filesock.setSoTimeout(port);
-                writer.println(username + ":" + fport + ":" + sender + ":Confd");
+                if (voice_or_file) {
+                    writer.println(username + ":" + fport + ":" + sender + ":con-Voice");
+                    voice_or_file = false;
+                } else {
+                    writer.println(username + ":" + fport + ":" + sender + ":Confd");
+                }
+
                 clientStatus.append("Sending port : " + fport + "\n");
                 writer.flush();
             } catch (IOException ex) {
@@ -310,7 +362,22 @@ public class client_form extends javax.swing.JFrame {
         int bytesRead;
         int current = 0;
         byte[] mybytearray = new byte[filesize];
-        String path = System.getProperty("user.dir");
+        JFileChooser chooser = new JFileChooser();
+
+        chooser.setApproveButtonText("Select Folder");
+        chooser.setCurrentDirectory(new java.io.File("."));
+        chooser.setControlButtonsAreShown(true);
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        String path = "";
+        int retval = chooser.showOpenDialog(client_form.this.getParent());
+
+        if (retval == JFileChooser.APPROVE_OPTION) {
+
+            path = chooser.getCurrentDirectory().getPath();
+            clientStatus.append("Selected folder : " + path + "\n");
+
+        }
+
         FileOutputStream fos = new FileOutputStream(path + "/" + fname);
         BufferedOutputStream bos = new BufferedOutputStream(fos);
         bytesRead = is.read(mybytearray, 0, mybytearray.length);
@@ -358,11 +425,12 @@ public class client_form extends javax.swing.JFrame {
         userList = new javax.swing.JList();
         fileButton = new javax.swing.JButton();
         jLabel5 = new javax.swing.JLabel();
+        send_voice_button = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jLabel1.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
-        jLabel1.setText("Address : ");
+        jLabel1.setText("Address    : ");
 
         jLabel2.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
         jLabel2.setText("Port : ");
@@ -442,6 +510,14 @@ public class client_form extends javax.swing.JFrame {
         jLabel5.setFont(new java.awt.Font("Segoe UI Light", 0, 18)); // NOI18N
         jLabel5.setText("Username : ");
 
+        send_voice_button.setFont(new java.awt.Font("Dialog", 0, 14)); // NOI18N
+        send_voice_button.setText("Send Voice");
+        send_voice_button.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                send_voice_buttonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -453,7 +529,7 @@ public class client_form extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel1)
-                                .addGap(29, 29, 29)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(addressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabel2)
@@ -471,10 +547,14 @@ public class client_form extends javax.swing.JFrame {
                     .addComponent(chatTextField))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addComponent(disconnectButton, javax.swing.GroupLayout.DEFAULT_SIZE, 114, Short.MAX_VALUE)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(fileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(disconnectButton, javax.swing.GroupLayout.PREFERRED_SIZE, 116, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(send_voice_button, javax.swing.GroupLayout.PREFERRED_SIZE, 128, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -495,7 +575,8 @@ public class client_form extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(connectButton)
-                            .addComponent(disconnectButton))
+                            .addComponent(disconnectButton)
+                            .addComponent(send_voice_button, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(anonloginButton)
@@ -507,10 +588,10 @@ public class client_form extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(chatTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane2)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 269, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(sendButton)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
@@ -585,7 +666,7 @@ public class client_form extends javax.swing.JFrame {
     }//GEN-LAST:event_anonloginButtonActionPerformed
 
     private void sendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sendButtonActionPerformed
-       if (userList.getSelectedValue() == null) {
+        if (userList.getSelectedValue() == null) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
@@ -601,7 +682,7 @@ public class client_form extends javax.swing.JFrame {
             chatTextField.setText("");
             chatTextField.requestFocus();
 
-        } else if(userList.getSelectedValue() != null && userList.getSelectedValue().equals("ALL")){
+        } else if (userList.getSelectedValue() != null && userList.getSelectedValue().equals("ALL")) {
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
                 chatTextField.requestFocus();
@@ -615,8 +696,8 @@ public class client_form extends javax.swing.JFrame {
             }
             chatTextField.setText("");
             chatTextField.requestFocus();
-        
-        }else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL")) {
+
+        } else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL")) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
@@ -656,7 +737,7 @@ public class client_form extends javax.swing.JFrame {
             chatTextField.setText("");
             chatTextField.requestFocus();
 
-        } else if(userList.getSelectedValue() != null && userList.getSelectedValue().equals("ALL")){
+        } else if (userList.getSelectedValue() != null && userList.getSelectedValue().equals("ALL")) {
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
                 chatTextField.requestFocus();
@@ -670,8 +751,8 @@ public class client_form extends javax.swing.JFrame {
             }
             chatTextField.setText("");
             chatTextField.requestFocus();
-        
-        }else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL")) {
+
+        } else if (userList.getSelectedValue() != null && !userList.getSelectedValue().equals("ALL")) {
 
             if (chatTextField.getText().equals("")) {
                 chatTextField.setText("");
@@ -714,8 +795,32 @@ public class client_form extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_portTextFieldActionPerformed
 
+    private void send_voice_buttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_send_voice_buttonActionPerformed
+        // TODO add your handling code here:
+        if (userList.getSelectedValue() != null) {
+            clientStatus.append("Record your Voice now!!\n");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(client_form.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            JavaSoundRecorder sound_rec = new JavaSoundRecorder();
+            sound_rec.record_main();
 
-    
+            //connection
+            try {
+                writer.println(username + ":" + userList.getSelectedValue() + ":Voice");
+                writer.flush();
+
+            } catch (Exception e) {
+                clientStatus.append("Connection message not sent!!\n");
+            }
+
+            //File section
+        } else {
+            clientStatus.append("Please select a user!!\n");
+        }
+    }//GEN-LAST:event_send_voice_buttonActionPerformed
 
     /**
      * @param args the command line arguments
@@ -762,6 +867,7 @@ public class client_form extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTextField portTextField;
     private javax.swing.JButton sendButton;
+    private javax.swing.JButton send_voice_button;
     private javax.swing.JList userList;
     private javax.swing.JTextField usernameTextField;
     // End of variables declaration//GEN-END:variables
